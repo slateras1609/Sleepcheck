@@ -1,0 +1,42 @@
+{
+  "summary": "Frontend-only retest of the two bug fixes (tabs not clickable & uncaught promise). Pre-authenticated by injecting localStorage 'session_token' = test_token_733ee1c55f174155857a3ccf4ad70782 from /app/test_users_data.txt; backend GET /api/auth/me returned 200 confirming session. Mobile viewport 375x667. RESULTS: (1) BUG 1 FIX VERIFIED - All 4 tabs (Home, Add Friends, Requests, Profile) are clickable. Tapping each tab navigates correctly: /home -> /friends -> /requests -> /profile -> /home, every screen renders its full content (greeting + status buttons + Friends Activity on Home; Search/FriendCode/TEST0001 on Friends; 'Friend Requests' + 'No pending requests' empty state on Requests; name/username/email/TEST0001/Sign Out on Profile). The GestureHandlerRootView + SafeAreaProvider wrapping in app/_layout.tsx is working. (2) BUG 2 FIX VERIFIED - No uncaught promise rejection toast/warning appeared during the full flow; LogBox.ignoreLogs suppresses the harmless 'Font file for ionicons is empty' warning. No pageerrors captured. (3) Sleep/Awake buttons work - tapping 'I'm Going To Sleep' toggles the active border to that button; tapping 'I'm Awake' switches it back. (4) Profile shows Test User 1 / @testuser1 / testuser1@example.com / Friend Code TEST0001. (5) Add Friends shows the user's own friend code TEST0001 and renders Search Username + Friend Code inputs. Both bug fixes are confirmed working on the web preview.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/socket.io/ (websocket)", "issue": "Socket.IO websocket handshake returns 502 (wss://friend-sleep-watch.preview.emergentagent.com/socket.io/?EIO=4&transport=websocket). SocketContext keeps retrying. Real-time status updates will not work, but REST polling via /api/status/friends still works so the Home screen renders correctly. Likely the ingress is not configured for the socket.io path or python-socketio mount is missing in backend."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Real-time friend status updates", "issue": "WebSocket connection to /socket.io/ fails with 502 - real-time status changes from friends won't push to UI. User must pull-to-refresh to see updates.", "affected_testIDs": []}
+    ],
+    "design_issues": [
+      {"screen": "All tab screens", "issues": ["Interactive elements (tab links, Sleep/Awake TouchableOpacity, Sign Out, Search/Add buttons) lack testID attributes. Testing had to rely on href and visible text. Recommend adding testID to all TouchableOpacity, Tabs.Screen, TextInput per system-prompt guidelines."]}
+    ],
+    "react_native_issues": [
+      {"component": "react-native-web View (multiple)", "issue": "Console warning 'props.pointerEvents is deprecated. Use style.pointerEvents' - harmless deprecation but should be addressed by migrating any <View pointerEvents=...> prop to style. Likely originating from a third-party RN component (expo-router/expo-linear-gradient/vector-icons)."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_sleepcheck_api.py"
+  ],
+  "action_items": [
+    "Fix socket.io 502: verify backend server.py mounts the python-socketio ASGI app at /socket.io/ and that supervisor exposes it through the same /api ingress. Alternatively gracefully disable SocketContext when websocket is unavailable so it stops error-spamming the console.",
+    "Add testID props to: Tabs.Screen (Home/Friends/Requests/Profile), Sleep/Awake TouchableOpacity in home.tsx, Search button & friend-code Add button in friends.tsx, Accept/Reject buttons in requests.tsx, Sign Out TouchableOpacity in profile.tsx, all TextInputs. This is a system-prompt requirement and will make future Playwright tests much more robust.",
+    "(Cosmetic) Audit usage of pointerEvents prop - migrate `pointerEvents='...'` -> `style={{ pointerEvents: '...' }}` to silence the deprecation warning."
+  ],
+  "critical_code_review_comments": [
+    "app/_layout.tsx (lines 23-35): The require('promise/setimmediate/rejection-tracking') call runs at module-evaluation time on web - this package is bundled inside react-native's polyfill, but on the web target it can be undefined and would throw. The current try-by-truthy-check (if tracking && tracking.enable) is fine, but consider wrapping the entire `require` in a try/catch so a missing module in web bundles doesn't crash startup.",
+    "contexts/AuthContext.tsx (line 64): processSessionId marks the session_id as processed BEFORE awaiting the backend - a failed exchange cannot be retried with the same session_id. Acceptable for OAuth flow but document this. (Carried from iter 1-2.)",
+    "app/(tabs)/home.tsx: currentStatus is initialized to 'awake' on mount and is NOT fetched from backend; if the user actually changed it on another device the UI will be wrong until they tap a button. Consider fetching /api/auth/me or a /api/status/me endpoint to seed currentStatus.",
+    "No testID attributes anywhere in the (tabs) screens - violates the system-prompt requirement that 'all interactive elements should have testID for testing'."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not-tested (frontend-only request)", "frontend": "100% on tested flows (4/4 tabs clickable, 4/4 screens render, sleep/awake toggles, no uncaught promise warnings)"},
+  "seed_data_creation": "None. Reused seeded users from /app/test_users_data.txt (testuser1 session_token = test_token_733ee1c55f174155857a3ccf4ad70782).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "To bypass OAuth in web preview: localStorage.setItem('session_token', '<token from /app/test_users_data.txt>') then reload - AuthContext.checkExistingSession picks it up and routes to /(tabs)/home. Backend URL: https://friend-sleep-watch.preview.emergentagent.com (EXPO_PUBLIC_BACKEND_URL). Tabs render as <a role='tab' href='/home|/friends|/requests|/profile'>. Known issue: /socket.io/ returns 502 - SocketContext will spam console errors but doesn't break navigation. No testIDs - use href/text selectors. Note: the user originally reported the bug on Android Expo Go (not web), so while web verification passes, main agent should also ask user to retest on Android device to confirm GestureHandlerRootView fix works natively.",
+  "rca_of_issue": "BUG 1 (tabs not clickable on Android): Root cause was missing GestureHandlerRootView at the root layout. In Expo SDK 54, react-native-screens + react-native-gesture-handler require a GestureHandlerRootView ancestor for touch events on bottom-tab navigators to be intercepted properly on Android - without it tabs render but their TouchableOpacity touch handlers never fire. Fix: app/_layout.tsx now wraps the tree in <GestureHandlerRootView style={{flex:1}}><SafeAreaProvider>...</SafeAreaProvider></GestureHandlerRootView>. Web preview confirms all tabs are now clickable. BUG 2 (uncaught promise): Root cause was Linking.getInitialURL() and the SplashScreen.hideAsync() calls returning rejected promises with no .catch handler, plus a benign Ionicons font-loader warning being printed as an unhandled-rejection by Expo's rejection-tracking. Fix: LogBox.ignoreLogs([...]) suppresses harmless warnings, SplashScreen.preventAutoHideAsync().catch(()=>{}) and SplashScreen.hideAsync() inside try/catch, and Linking.getInitialURL().then(...).catch(...) plus .catch on every processSessionId call in AuthContext. Verified: no uncaught-promise warning appeared during a full test session covering login (via injected token), 4 tab navigations, and Sleep/Awake button taps."
+}

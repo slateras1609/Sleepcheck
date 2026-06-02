@@ -150,22 +150,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (Platform.OS === 'web') return;
 
     // Handle cold start (app opened via deep link)
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        console.log('Initial URL:', url);
-        const sessionId = extractSessionId(url);
-        if (sessionId) {
-          processSessionId(sessionId);
+    Linking.getInitialURL()
+      .then((url) => {
+        if (url) {
+          console.log('Initial URL:', url);
+          const sessionId = extractSessionId(url);
+          if (sessionId) {
+            processSessionId(sessionId).catch((err) =>
+              console.error('Error processing initial URL session:', err)
+            );
+          }
         }
-      }
-    });
+      })
+      .catch((err) => console.error('Error getting initial URL:', err));
 
     // Handle hot links (app already open)
     const subscription = Linking.addEventListener('url', (event) => {
       console.log('Deep link received:', event.url);
       const sessionId = extractSessionId(event.url);
       if (sessionId) {
-        processSessionId(sessionId);
+        processSessionId(sessionId).catch((err) =>
+          console.error('Error processing deep link session:', err)
+        );
       }
     });
 
