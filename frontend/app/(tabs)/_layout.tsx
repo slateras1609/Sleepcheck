@@ -1,24 +1,41 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
+  // Respect device safe-area bottom inset for gesture navigation devices
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 16 : 10);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: true,
         tabBarStyle: {
           backgroundColor: '#1A1A1A',
           borderTopColor: '#2A2A2A',
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 72 + bottomInset,
+          paddingBottom: bottomInset,
+          paddingTop: 10,
         },
         tabBarActiveTintColor: '#6C5CE7',
-        tabBarInactiveTintColor: '#666666',
+        tabBarInactiveTintColor: '#7A7A7A',
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
+          marginTop: 6,
+          paddingBottom: 0,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 0,
+        },
+        tabBarIconStyle: {
+          marginTop: 0,
+          marginBottom: 0,
         },
       }}
     >
@@ -26,8 +43,8 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -35,8 +52,12 @@ export default function TabsLayout() {
         name="friends"
         options={{
           title: 'Add Friends',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-add" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'person-add' : 'person-add-outline'}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -44,8 +65,12 @@ export default function TabsLayout() {
         name="requests"
         options={{
           title: 'Requests',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'notifications' : 'notifications-outline'}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -53,8 +78,12 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'person' : 'person-outline'}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
