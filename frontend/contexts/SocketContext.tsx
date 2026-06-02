@@ -29,7 +29,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     // Create socket connection
     const newSocket = io(BACKEND_URL || '', {
       transports: ['websocket', 'polling'],
-      path: '/socket.io/'
+      path: '/socket.io/',
+      reconnection: true,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 2000,
+      timeout: 5000,
     });
 
     newSocket.on('connect', () => {
@@ -44,12 +48,17 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setConnected(false);
     });
 
+    newSocket.on('connect_error', (err) => {
+      // Silently fail - app works fine with REST polling
+      console.log('Socket connection unavailable, using REST polling');
+    });
+
     newSocket.on('authenticated', (data) => {
       console.log('Socket authenticated:', data);
     });
 
     newSocket.on('error', (error) => {
-      console.error('Socket error:', error);
+      console.log('Socket error (non-blocking):', error);
     });
 
     setSocket(newSocket);
