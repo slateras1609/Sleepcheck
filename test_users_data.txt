@@ -1,0 +1,17 @@
+SleepCheck Test Users
+================================================================================
+
+User 1:
+  User ID: user_test1_3fd2bd12
+  Email: testuser1@example.com
+  Username: testuser1
+  Friend Code: TEST0001
+  Session Token: test_token_733ee1c55f174155857a3ccf4ad70782
+
+User 2:
+  User ID: user_test2_4f4e5386
+  Email: testuser2@example.com
+  Username: testuser2
+  Friend Code: TEST0002
+  Session Token: test_token_0246850d8f064644b3bd0f34eb6742a5
+
