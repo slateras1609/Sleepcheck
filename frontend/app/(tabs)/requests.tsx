@@ -10,7 +10,6 @@ import {
   Alert,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { formatDistanceToNow } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +23,16 @@ interface FriendRequest {
   from_name: string;
   from_picture?: string;
   created_at: string;
+}
+
+function getInitials(name: string): string {
+  return (name || '?')
+    .split(' ')
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 }
 
 export default function RequestsScreen() {
@@ -140,7 +149,7 @@ export default function RequestsScreen() {
         ) : requests.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconContainer}>
-              <Ionicons name="mail-outline" size={48} color="#444466" />
+              <Text style={styles.emptyEmoji}>📭</Text>
             </View>
             <Text style={styles.emptyStateText}>No pending requests</Text>
             <Text style={styles.emptyStateSubtext}>
@@ -156,7 +165,7 @@ export default function RequestsScreen() {
             >
               <View style={styles.requestHeader}>
                 <View style={styles.requestAvatar}>
-                  <Ionicons name="person" size={24} color="#A89BF0" />
+                  <Text style={styles.requestAvatarText}>{getInitials(request.from_name)}</Text>
                 </View>
                 <View style={styles.requestInfo}>
                   <Text style={styles.requestName}>{request.from_name}</Text>
@@ -179,7 +188,7 @@ export default function RequestsScreen() {
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
                     <>
-                      <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                      <Text style={styles.acceptIcon}>✓</Text>
                       <Text style={styles.acceptButtonText}>Accept</Text>
                     </>
                   )}
@@ -192,7 +201,7 @@ export default function RequestsScreen() {
                   disabled={processing === request.request_id}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="close" size={18} color="#9999B0" />
+                  <Text style={styles.rejectIcon}>✕</Text>
                   <Text style={styles.rejectButtonText}>Decline</Text>
                 </TouchableOpacity>
               </View>
@@ -263,6 +272,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  emptyEmoji: {
+    fontSize: 44,
+    lineHeight: 52,
+  },
   emptyStateText: {
     fontSize: 17,
     color: '#9999B0',
@@ -292,10 +305,15 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(108, 92, 231, 0.15)',
+    backgroundColor: 'rgba(108, 92, 231, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  requestAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
   },
   requestInfo: {
     flex: 1,
@@ -331,6 +349,12 @@ const styles = StyleSheet.create({
   acceptButton: {
     backgroundColor: '#6C5CE7',
   },
+  acceptIcon: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
   acceptButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
@@ -340,6 +364,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  rejectIcon: {
+    color: '#9999B0',
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   rejectButtonText: {
     color: '#9999B0',

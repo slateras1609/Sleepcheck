@@ -8,7 +8,6 @@ import {
   Alert,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +16,14 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const initials = (user?.name || '?')
+    .split(' ')
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   const handleSignOut = () => {
     Alert.alert(
@@ -54,12 +61,12 @@ export default function ProfileScreen() {
       >
         <View style={styles.profileCard}>
           <LinearGradient
-            colors={['rgba(108, 92, 231, 0.25)', 'rgba(108, 92, 231, 0.05)']}
+            colors={['#7B6CEB', '#6C5CE7']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.avatar}
           >
-            <Ionicons name="person" size={44} color="#A89BF0" />
+            <Text style={styles.avatarText}>{initials}</Text>
           </LinearGradient>
           <Text testID="profile-name" style={styles.name}>
             {user?.name}
@@ -68,14 +75,14 @@ export default function ProfileScreen() {
             @{user?.username}
           </Text>
           <View style={styles.emailContainer}>
-            <Ionicons name="mail-outline" size={13} color="#777799" />
+            <Text style={styles.emailIcon}>✉️</Text>
             <Text style={styles.email}>{user?.email}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="share-social-outline" size={18} color="#A89BF0" />
+            <Text style={styles.sectionIcon}>🔗</Text>
             <Text style={styles.sectionTitle}>Your Friend Code</Text>
           </View>
           <LinearGradient
@@ -95,7 +102,7 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="settings-outline" size={18} color="#A89BF0" />
+            <Text style={styles.sectionIcon}>⚙️</Text>
             <Text style={styles.sectionTitle}>Account</Text>
           </View>
           <TouchableOpacity
@@ -105,10 +112,10 @@ export default function ProfileScreen() {
             activeOpacity={0.85}
           >
             <View style={styles.menuIconWrap}>
-              <Ionicons name="log-out-outline" size={22} color="#FF6B6B" />
+              <Text style={styles.menuIconEmoji}>🚪</Text>
             </View>
             <Text style={styles.menuItemText}>Sign Out</Text>
-            <Ionicons name="chevron-forward" size={18} color="#444466" />
+            <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         </View>
 
@@ -156,7 +163,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: 'rgba(108, 92, 231, 0.4)',
+    borderColor: 'rgba(168, 155, 240, 0.5)',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: -1,
   },
   name: {
     fontSize: 22,
@@ -176,6 +189,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  emailIcon: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
   email: {
     fontSize: 13,
     color: '#777799',
@@ -188,6 +205,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     gap: 8,
+  },
+  sectionIcon: {
+    fontSize: 18,
+    lineHeight: 22,
   },
   sectionTitle: {
     fontSize: 16,
@@ -232,11 +253,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  menuIconEmoji: {
+    fontSize: 20,
+    lineHeight: 24,
+  },
   menuItemText: {
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
     color: '#FF6B6B',
+  },
+  chevron: {
+    fontSize: 22,
+    color: '#444466',
+    fontWeight: '600',
   },
   appName: {
     textAlign: 'center',

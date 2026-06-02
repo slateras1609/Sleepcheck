@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 
 export default function Index() {
   const { user, loading, signIn } = useAuth();
@@ -33,7 +32,7 @@ export default function Index() {
             end={{ x: 1, y: 1 }}
             style={styles.iconContainer}
           >
-            <Ionicons name="moon" size={64} color="#A89BF0" />
+            <Text style={styles.moonEmoji}>🌙</Text>
           </LinearGradient>
           <View style={styles.starDot1} />
           <View style={styles.starDot2} />
@@ -49,12 +48,9 @@ export default function Index() {
           onPress={signIn}
           activeOpacity={0.85}
         >
-          <Ionicons
-            name="logo-google"
-            size={22}
-            color="#FFFFFF"
-            style={styles.googleIcon}
-          />
+          <View style={styles.googleIconBadge}>
+            <Text style={styles.googleG}>G</Text>
+          </View>
           <Text style={styles.signInText}>Sign in with Google</Text>
         </TouchableOpacity>
 
@@ -96,6 +92,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(108, 92, 231, 0.25)',
+  },
+  moonEmoji: {
+    fontSize: 72,
+    lineHeight: 84,
+    textAlign: 'center',
   },
   starDot1: {
     position: 'absolute',
@@ -143,8 +144,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#6C5CE7',
-    paddingVertical: 17,
-    paddingHorizontal: 32,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 14,
     marginBottom: 28,
     minWidth: 280,
@@ -155,8 +156,20 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  googleIcon: {
+  googleIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
+  },
+  googleG: {
+    color: '#4285F4',
+    fontSize: 18,
+    fontWeight: '900',
+    lineHeight: 22,
   },
   signInText: {
     color: '#FFFFFF',

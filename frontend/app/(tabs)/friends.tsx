@@ -10,7 +10,6 @@ import {
   Alert,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,6 +20,16 @@ interface SearchResult {
   username: string;
   name: string;
   picture?: string;
+}
+
+function getInitials(name: string): string {
+  return (name || '?')
+    .split(' ')
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 }
 
 export default function FriendsScreen() {
@@ -129,11 +138,11 @@ export default function FriendsScreen() {
       >
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="search" size={18} color="#A89BF0" />
+            <Text style={styles.sectionEmoji}>🔍</Text>
             <Text style={styles.sectionTitle}>Search Username</Text>
           </View>
           <View style={styles.searchContainer}>
-            <Ionicons name="at" size={18} color="#777799" style={styles.searchIcon} />
+            <Text style={styles.searchIconText}>@</Text>
             <TextInput
               testID="username-search-input"
               style={styles.searchInput}
@@ -154,7 +163,7 @@ export default function FriendsScreen() {
               {searching ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                <Text style={styles.searchButtonText}>→</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -168,7 +177,7 @@ export default function FriendsScreen() {
                   style={styles.resultCard}
                 >
                   <View style={styles.resultAvatar}>
-                    <Ionicons name="person" size={22} color="#A89BF0" />
+                    <Text style={styles.resultAvatarText}>{getInitials(result.name)}</Text>
                   </View>
                   <View style={styles.resultInfo}>
                     <Text style={styles.resultName}>{result.name}</Text>
@@ -184,7 +193,7 @@ export default function FriendsScreen() {
                     {sendingRequest === result.user_id ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
-                      <Ionicons name="person-add" size={20} color="#FFFFFF" />
+                      <Text style={styles.addButtonText}>+</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -195,7 +204,7 @@ export default function FriendsScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="key-outline" size={18} color="#A89BF0" />
+            <Text style={styles.sectionEmoji}>🔑</Text>
             <Text style={styles.sectionTitle}>Add by Friend Code</Text>
           </View>
           <TextInput
@@ -214,14 +223,14 @@ export default function FriendsScreen() {
             onPress={addByFriendCode}
             activeOpacity={0.85}
           >
-            <Ionicons name="person-add" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Text style={styles.primaryButtonEmoji}>👥</Text>
             <Text style={styles.primaryButtonText}>Send Friend Request</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="share-social-outline" size={18} color="#A89BF0" />
+            <Text style={styles.sectionEmoji}>🔗</Text>
             <Text style={styles.sectionTitle}>Your Friend Code</Text>
           </View>
           <LinearGradient
@@ -277,6 +286,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     gap: 8,
   },
+  sectionEmoji: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
@@ -293,8 +306,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.04)',
   },
-  searchIcon: {
+  searchIconText: {
+    fontSize: 18,
+    color: '#777799',
     marginRight: 8,
+    fontWeight: '600',
   },
   searchInput: {
     flex: 1,
@@ -309,6 +325,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  searchButtonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 22,
   },
   resultsContainer: {
     marginTop: 12,
@@ -327,10 +349,15 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(108, 92, 231, 0.15)',
+    backgroundColor: 'rgba(108, 92, 231, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  resultAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   resultInfo: {
     flex: 1,
@@ -353,6 +380,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 26,
+  },
   codeInput: {
     backgroundColor: '#15152A',
     borderRadius: 14,
@@ -374,11 +407,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
+    gap: 8,
     shadowColor: '#6C5CE7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  primaryButtonEmoji: {
+    fontSize: 18,
+    lineHeight: 22,
   },
   primaryButtonText: {
     color: '#FFFFFF',
