@@ -175,7 +175,7 @@ export default function HomeScreen() {
                 {updating === 'sleeping' ? (
                   <ActivityIndicator color="#6C5CE7" size="large" />
                 ) : (
-                  <Ionicons name="moon" size={40} color="#A89BF0" />
+                  <Text style={styles.buttonEmoji}>🌙</Text>
                 )}
               </View>
               <Text style={styles.statusButtonText}>I&apos;m Going To Sleep</Text>
@@ -208,7 +208,7 @@ export default function HomeScreen() {
                 {updating === 'awake' ? (
                   <ActivityIndicator color="#FFA500" size="large" />
                 ) : (
-                  <Ionicons name="sunny" size={40} color="#FFB84D" />
+                  <Text style={styles.buttonEmoji}>☀️</Text>
                 )}
               </View>
               <Text style={styles.statusButtonText}>I&apos;m Awake</Text>
@@ -256,11 +256,7 @@ export default function HomeScreen() {
                       },
                     ]}
                   >
-                    <Ionicons
-                      name={isSleeping ? 'moon' : 'sunny'}
-                      size={22}
-                      color={isSleeping ? '#A89BF0' : '#FFB84D'}
-                    />
+                    <Text style={styles.friendAvatarEmoji}>{isSleeping ? '🌙' : '☀️'}</Text>
                   </View>
                   <View style={styles.friendInfo}>
                     <Text style={styles.friendName}>{friend.name}</Text>
@@ -367,6 +363,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  buttonEmoji: {
+    fontSize: 38,
+    lineHeight: 44,
+    textAlign: 'center',
+  },
+  friendAvatarEmoji: {
+    fontSize: 22,
+    lineHeight: 28,
+    textAlign: 'center',
   },
   statusButtonText: {
     color: '#FFFFFF',
