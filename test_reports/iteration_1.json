@@ -1,0 +1,32 @@
+{
+  "summary": "Full backend + frontend testing for SleepCheck. Both reported bugs are FIXED. Bug 1 (Ionicons font): Login screen renders moon (f460) and google-logo (f3f5) Ionicons correctly; document.fonts shows 'ionicons' status: loaded; no 'Font file for ionicons is empty' error. Bug 2 (OAuth /auth route): New auth.tsx route handles 3 cases correctly - (a) /auth (no session_id) -> redirects to /, (b) /auth?session_id=INVALID -> calls /api/auth/session, gets 400, redirects to /, (c) Sign-in button -> redirects to auth.emergentagent.com. No 'Unmatched Route' errors anywhere. Backend: 27/27 pytest tests pass covering auth gating, status update/get, friend search/request/accept/list, add-by-code, logout, and full authenticated flows with seeded sessions.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_sleepcheck_api.py",
+    "/app/test_reports/pytest/sleepcheck_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AuthContext.processSessionId marks session_id as processed BEFORE awaiting backend call; if call fails, the same session_id cannot be retried (line 60-64 in AuthContext.tsx). Minor edge case but acceptable since failed sessions redirect to /.",
+    "server.py uses deprecated @app.on_event('startup'/'shutdown') hooks - consider migrating to FastAPI lifespan handlers (non-blocking, no functional issue).",
+    "Backend /api/auth/session returns 500 instead of 400 when httpx.RequestError occurs; tests handle both but 400 would be more consistent."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_sleepcheck_api.py (new)"
+  ],
+  "success_rate": {"backend": "100% (27/27)", "frontend": "100% (3/3 critical flows)"},
+  "seed_data_creation": "Tests seed test users + session tokens directly into MongoDB with TEST_ prefix and clean up via fixture teardown. No persistent test data left behind.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend public URL: https://friend-sleep-watch.preview.emergentagent.com. Env var is EXPO_PUBLIC_BACKEND_URL (not EXPO_BACKEND_URL). Reuse /app/backend/tests/test_sleepcheck_api.py for regression. The /auth web route works as a callback handler; on native it is also used by deep link expo://...--/auth?session_id=XXX via Linking listener in AuthContext.",
+  "rca_of_issue": "Bug 1 RCA: Ionicons font was not loaded before render because newArchEnabled=true caused font asset preloading to fail on Expo Go. Fix: set newArchEnabled=false in app.json + explicit Font.loadAsync(Ionicons.font) in RootLayout before showing app. Verified: document.fonts shows ionicons 'loaded', icons render with correct unicode glyphs. Bug 2 RCA: Expo deep link callback exp://...--/auth had no matching route, causing 'Unmatched Route' page. Fix: added /app/frontend/app/auth.tsx route that uses useLocalSearchParams to extract session_id and calls processSessionId in AuthContext, then redirects to /(tabs)/home on success or / on failure. Verified on web preview with no/invalid session_id - both gracefully redirect to login without errors."
+}
