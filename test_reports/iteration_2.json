@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only retest of Google OAuth redirect fix. Verified on web preview (mobile viewport 375x667): (1) Root route `/` renders SleepCheck login screen with moon icon, Sign-in button visible and tappable, no Unmatched Route. (2) Ionicons font confirmed loaded via document.fonts API (status='loaded'); moon + google-logo icons render correctly. (3) `/auth` route (no session_id) gracefully redirects to `/` - no Unmatched Route shown. (4) `/auth?session_id=INVALID_TEST` correctly invokes POST /api/auth/session, receives 400, redirects to `/`. (5) `/?session_id=INVALID_TEST` (the NEW redirect target after the fix) triggers AuthContext web `useEffect` which extracts session_id, calls processSessionId, gets 400, and stays on login - works correctly. Code review confirms signIn() on native uses `Linking.createURL('/')` which on Expo Go returns `exp://friend-sleep-watch.preview.emergentagent.com/--/` (root, guaranteed to match index.tsx); AuthContext.useEffect adds a Linking listener that calls extractSessionId on both cold-start (getInitialURL) and hot deep links, so session_id will be picked up at index regardless of route. IMPORTANT CAVEAT: Playwright web automation CANNOT execute Expo Go's native deep-link handling - the actual Android Expo Go flow (WebBrowser.openAuthSessionAsync + result.url parsing) cannot be exercised from web. Both routes (/ and /auth) handle session_id correctly on web, and the native code path is implemented correctly per the AuthContext source.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_sleepcheck_api.py",
+    "/app/test_reports/pytest/sleepcheck_results.xml"
+  ],
+  "action_items": [
+    "MANUAL DEVICE TEST REQUIRED: Web automation cannot validate Android Expo Go's actual deep-link return. User must retest on Android Expo Go and share the dev-log line `Redirect URL: exp://...` printed by signIn() so we can confirm Linking.createURL('/') returns `exp://friend-sleep-watch.preview.emergentagent.com/--/` (with trailing slash, NO /auth). If the redirect URL still includes `/auth`, the bundled JS may be stale - force-reload Expo Go (shake -> Reload) or clear bundler cache and re-scan QR.",
+    "If issue persists on Android, add an Alert.alert(redirectUrl) call inside signIn() before openAuthSessionAsync so the URL is visible in the device UI without dev tools."
+  ],
+  "critical_code_review_comments": [
+    "AuthContext.signIn (line 207): Uses `Linking.createURL('/')` for native redirect - correct for routing to index.tsx, but note that on a standalone/dev-client build (not Expo Go) this returns `frontend://` (scheme from app.json) which also maps to root. Both forms are handled by the Linking listener.",
+    "AuthContext.processSessionId (line 64): Marks session_id processed BEFORE awaiting backend; failed exchanges cannot be retried with same session_id. Acceptable since failed sessions fall back to login. Carried over from iter 1.",
+    "auth.tsx (line 19): On no session_id it calls router.replace('/'). Combined with the new root-redirect fix, the /auth route is now effectively a fallback - safe to keep for backward compatibility."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not-tested (frontend-only request)", "frontend": "100% (5/5 web flows verified) - native Android Expo Go flow NOT executable from web"},
+  "seed_data_creation": "None - reused existing /app/backend/tests/test_sleepcheck_api.py (no backend run this iteration).",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Web preview verifies: index.tsx + auth.tsx both safely handle session_id query param via AuthContext's web useEffect; no Unmatched Route on any path. Native (Android Expo Go) verification is OUT OF SCOPE for Playwright web tests - main agent should ask the user to retest on Android and capture the `Redirect URL:` log line from Expo Go dev tools. EXPO_PUBLIC_BACKEND_URL=https://friend-sleep-watch.preview.emergentagent.com.",
+  "rca_of_issue": "User-reported bug: On Android Expo Go, after Google sign-in the OAuth provider redirected to `exp://friend-sleep-watch.preview.emergentagent.com/--/auth` and Expo Router showed 'Unmatched Route'. Although /app/frontend/app/auth.tsx exists, Expo Go on Android can fail to recognize newly added routes if the JS bundle is cached, OR Expo Router's URL matching for `--/auth?session_id=X` can fail when query params contain reserved characters. FIX applied (this iteration): changed `Linking.createURL('auth')` -> `Linking.createURL('/')` in AuthContext.signIn so the post-OAuth redirect lands on `exp://host/--/` (the root index route, which always exists). The AuthContext.useEffect Linking listener calls `extractSessionId` on the incoming URL and invokes `processSessionId(sessionId)` regardless of which path the deep link arrived on - so the session is exchanged at the root and the user is then routed to /(tabs)/home. WEB VERIFICATION: All 5 critical paths (/, /auth, /auth?session_id, /?session_id, ionicons load) pass; no Unmatched Route shown for any. NATIVE VERIFICATION REQUIRED on Android Expo Go (cannot be done via Playwright web)."
+}

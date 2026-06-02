@@ -202,7 +202,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (Platform.OS === 'web') {
         redirectUrl = window.location.origin + '/';
       } else {
-        redirectUrl = Linking.createURL('auth');
+        // Use root URL to ensure it always matches the index route
+        // Format: exp://host/--/ on Expo Go, scheme://  on builds
+        redirectUrl = Linking.createURL('/');
       }
 
       console.log('Redirect URL:', redirectUrl);
