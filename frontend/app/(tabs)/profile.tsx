@@ -11,10 +11,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const handleSignOut = () => {
     Alert.alert(
@@ -37,40 +39,80 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0F0F0F', '#1A1A1A']} style={styles.header}>
+      <LinearGradient
+        colors={['#1A1A2E', '#0F0F1A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + 20 }]}
+      >
         <Text style={styles.title}>Profile</Text>
       </LinearGradient>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 40, paddingTop: 20 }}
+      >
         <View style={styles.profileCard}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={48} color="#666666" />
-            </View>
+          <LinearGradient
+            colors={['rgba(108, 92, 231, 0.25)', 'rgba(108, 92, 231, 0.05)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatar}
+          >
+            <Ionicons name="person" size={44} color="#A89BF0" />
+          </LinearGradient>
+          <Text testID="profile-name" style={styles.name}>
+            {user?.name}
+          </Text>
+          <Text testID="profile-username" style={styles.username}>
+            @{user?.username}
+          </Text>
+          <View style={styles.emailContainer}>
+            <Ionicons name="mail-outline" size={13} color="#777799" />
+            <Text style={styles.email}>{user?.email}</Text>
           </View>
-
-          <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.username}>@{user?.username}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Friend Code</Text>
-          <View style={styles.friendCodeCard}>
-            <Text style={styles.friendCode}>{user?.friend_code}</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="share-social-outline" size={18} color="#A89BF0" />
+            <Text style={styles.sectionTitle}>Your Friend Code</Text>
+          </View>
+          <LinearGradient
+            colors={['rgba(108, 92, 231, 0.25)', 'rgba(108, 92, 231, 0.08)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.friendCodeCard}
+          >
+            <Text testID="profile-friend-code" style={styles.friendCode}>
+              {user?.friend_code}
+            </Text>
             <Text style={styles.friendCodeSubtext}>
               Share this code with friends to connect
             </Text>
-          </View>
+          </LinearGradient>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={24} color="#FF6B6B" />
-            <Text style={[styles.menuItemText, { color: '#FF6B6B' }]}>Sign Out</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="settings-outline" size={18} color="#A89BF0" />
+            <Text style={styles.sectionTitle}>Account</Text>
+          </View>
+          <TouchableOpacity
+            testID="sign-out-button"
+            style={styles.menuItem}
+            onPress={handleSignOut}
+            activeOpacity={0.85}
+          >
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="log-out-outline" size={22} color="#FF6B6B" />
+            </View>
+            <Text style={styles.menuItemText}>Sign Out</Text>
+            <Ionicons name="chevron-forward" size={18} color="#444466" />
           </TouchableOpacity>
         </View>
+
+        <Text style={styles.appName}>SleepCheck v1.0</Text>
       </ScrollView>
     </View>
   );
@@ -79,100 +121,127 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F0F',
+    backgroundColor: '#0B0B14',
   },
   header: {
-    paddingTop: 60,
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 30,
+    fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: -0.5,
   },
   content: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: 20,
   },
   profileCard: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: '#15152A',
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
-  },
-  avatarContainer: {
-    marginBottom: 16,
+    borderColor: 'rgba(255, 255, 255, 0.04)',
   },
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#2A2A2A',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#6C5CE7',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(108, 92, 231, 0.4)',
   },
   name: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
+    letterSpacing: -0.3,
   },
   username: {
-    fontSize: 16,
-    color: '#999999',
-    marginBottom: 8,
+    fontSize: 15,
+    color: '#A89BF0',
+    marginBottom: 12,
+    fontWeight: '600',
+  },
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   email: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 13,
+    color: '#777799',
   },
   section: {
     marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
   friendCodeCard: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#6C5CE7',
   },
   friendCode: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#6C5CE7',
-    letterSpacing: 4,
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 6,
     marginBottom: 8,
   },
   friendCodeSubtext: {
-    fontSize: 12,
-    color: '#666666',
-    textAlign: 'center',
+    fontSize: 13,
+    color: '#A89BF0',
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#15152A',
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  menuIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 107, 107, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   menuItemText: {
+    flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 12,
+    color: '#FF6B6B',
+  },
+  appName: {
+    textAlign: 'center',
+    color: '#444466',
+    fontSize: 12,
+    marginTop: 8,
   },
 });

@@ -13,6 +13,7 @@ import { useSocket } from '../../contexts/SocketContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { formatDistanceToNow } from 'date-fns';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
@@ -28,11 +29,12 @@ interface FriendStatus {
 export default function HomeScreen() {
   const { user, sessionToken } = useAuth();
   const { socket } = useSocket();
+  const insets = useSafeAreaInsets();
   const [currentStatus, setCurrentStatus] = useState<string>('awake');
   const [friends, setFriends] = useState<FriendStatus[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [updating, setUpdating] = useState(false);
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && sessionToken) {
@@ -43,8 +45,6 @@ export default function HomeScreen() {
   useEffect(() => {
     if (socket) {
       socket.on('status_update', (data) => {
-        console.log('Status update received:', data);
-        // Update friend status in real-time
         setFriends((prev) =>
           prev.map((friend) =>
             friend.user_id === data.user_id
@@ -64,11 +64,8 @@ export default function HomeScreen() {
     try {
       setLoading(true);
       const response = await fetch(`${BACKEND_URL}/api/status/friends`, {
-        headers: {
-          Authorization: `Bearer ${sessionToken}`,
-        },
+        headers: { Authorization: `Bearer ${sessionToken}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         setFriends(data);
@@ -88,7 +85,7 @@ export default function HomeScreen() {
 
   const updateStatus = async (newStatus: string) => {
     try {
-      setUpdating(true);
+      setUpdating(newStatus);
       const response = await fetch(`${BACKEND_URL}/api/status/update`, {
         method: 'POST',
         headers: {
@@ -97,22 +94,14 @@ export default function HomeScreen() {
         },
         body: JSON.stringify({ status: newStatus }),
       });
-
       if (response.ok) {
         setCurrentStatus(newStatus);
       }
     } catch (error) {
       console.error('Error updating status:', error);
     } finally {
-      setUpdating(false);
+      setUpdating(null);
     }
-  };
-
-  const renderStatusIcon = (status: string) => {
-    if (status === 'sleeping') {
-      return <Ionicons name="moon" size={24} color="#6C5CE7" />;
-    }
-    return <Ionicons name="sunny" size={24} color="#FFA500" />;
   };
 
   const renderStatusBadge = (status: string) => {
@@ -121,21 +110,13 @@ export default function HomeScreen() {
       <View
         style={[
           styles.statusBadge,
-          { backgroundColor: isSleeping ? 'rgba(108, 92, 231, 0.2)' : 'rgba(255, 165, 0, 0.2)' },
+          { backgroundColor: isSleeping ? 'rgba(108, 92, 231, 0.18)' : 'rgba(255, 165, 0, 0.18)' },
         ]}
       >
         <View
-          style={[
-            styles.statusDot,
-            { backgroundColor: isSleeping ? '#6C5CE7' : '#FFA500' },
-          ]}
+          style={[styles.statusDot, { backgroundColor: isSleeping ? '#6C5CE7' : '#FFA500' }]}
         />
-        <Text
-          style={[
-            styles.statusText,
-            { color: isSleeping ? '#6C5CE7' : '#FFA500' },
-          ]}
-        >
+        <Text style={[styles.statusText, { color: isSleeping ? '#A89BF0' : '#FFB84D' }]}>
           {isSleeping ? 'Sleeping' : 'Awake'}
         </Text>
       </View>
@@ -145,8 +126,10 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#0F0F0F', '#1A1A1A']}
-        style={styles.header}
+        colors={['#1A1A2E', '#0F0F1A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + 20 }]}
       >
         <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0]}</Text>
         <Text style={styles.subtitle}>How are you feeling?</Text>
@@ -154,84 +137,142 @@ export default function HomeScreen() {
 
       <ScrollView
         style={styles.content}
+        contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor="#6C5CE7"
+            colors={['#6C5CE7']}
           />
         }
       >
         <View style={styles.statusSection}>
           <Text style={styles.sectionTitle}>Your Status</Text>
-          <View style={styles.statusButtons}>
-            <TouchableOpacity
-              style={[
-                styles.statusButton,
-                currentStatus === 'sleeping' && styles.activeStatusButton,
-              ]}
-              onPress={() => updateStatus('sleeping')}
-              disabled={updating}
-            >
-              {updating && currentStatus !== 'sleeping' ? (
-                <ActivityIndicator color="#6C5CE7" />
-              ) : (
-                <>
-                  <Ionicons name="moon" size={32} color="#6C5CE7" />
-                  <Text style={styles.statusButtonText}>I'm Going To Sleep</Text>
-                </>
-              )}
-            </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.statusButton,
-                currentStatus === 'awake' && styles.activeStatusButton,
-              ]}
-              onPress={() => updateStatus('awake')}
-              disabled={updating}
+          <TouchableOpacity
+            testID="sleep-button"
+            style={[
+              styles.statusButton,
+              styles.sleepButton,
+              currentStatus === 'sleeping' && styles.activeSleepButton,
+            ]}
+            onPress={() => updateStatus('sleeping')}
+            disabled={updating !== null}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={
+                currentStatus === 'sleeping'
+                  ? ['rgba(108, 92, 231, 0.25)', 'rgba(108, 92, 231, 0.05)']
+                  : ['rgba(108, 92, 231, 0.08)', 'rgba(108, 92, 231, 0.02)']
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
             >
-              {updating && currentStatus !== 'awake' ? (
-                <ActivityIndicator color="#FFA500" />
-              ) : (
-                <>
-                  <Ionicons name="sunny" size={32} color="#FFA500" />
-                  <Text style={styles.statusButtonText}>I'm Awake</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+              <View style={styles.buttonIconWrap}>
+                {updating === 'sleeping' ? (
+                  <ActivityIndicator color="#6C5CE7" size="large" />
+                ) : (
+                  <Ionicons name="moon" size={40} color="#A89BF0" />
+                )}
+              </View>
+              <Text style={styles.statusButtonText}>I&apos;m Going To Sleep</Text>
+              <Text style={styles.statusButtonSubtext}>Tap to mark yourself as sleeping</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            testID="awake-button"
+            style={[
+              styles.statusButton,
+              styles.awakeButton,
+              currentStatus === 'awake' && styles.activeAwakeButton,
+            ]}
+            onPress={() => updateStatus('awake')}
+            disabled={updating !== null}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={
+                currentStatus === 'awake'
+                  ? ['rgba(255, 165, 0, 0.22)', 'rgba(255, 165, 0, 0.04)']
+                  : ['rgba(255, 165, 0, 0.08)', 'rgba(255, 165, 0, 0.02)']
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
+            >
+              <View style={styles.buttonIconWrap}>
+                {updating === 'awake' ? (
+                  <ActivityIndicator color="#FFA500" size="large" />
+                ) : (
+                  <Ionicons name="sunny" size={40} color="#FFB84D" />
+                )}
+              </View>
+              <Text style={styles.statusButtonText}>I&apos;m Awake</Text>
+              <Text style={styles.statusButtonSubtext}>Tap to mark yourself as awake</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.friendsSection}>
-          <Text style={styles.sectionTitle}>Friends Activity</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Friends Activity</Text>
+            {friends.length > 0 && (
+              <Text style={styles.friendCount}>{friends.length}</Text>
+            )}
+          </View>
+
           {loading ? (
             <ActivityIndicator size="large" color="#6C5CE7" style={{ marginTop: 32 }} />
           ) : friends.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={64} color="#444444" />
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="people-outline" size={48} color="#444466" />
+              </View>
               <Text style={styles.emptyStateText}>No friends yet</Text>
-              <Text style={styles.emptyStateSubtext}>Add friends to see their status</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Add friends to see their sleep status here
+              </Text>
             </View>
           ) : (
-            friends.map((friend) => (
-              <View key={friend.user_id} style={styles.friendCard}>
-                <View style={styles.friendAvatar}>
-                  <Ionicons name="person" size={24} color="#666666" />
+            friends.map((friend) => {
+              const isSleeping = friend.status === 'sleeping';
+              return (
+                <View
+                  key={friend.user_id}
+                  testID={`friend-card-${friend.username}`}
+                  style={styles.friendCard}
+                >
+                  <View
+                    style={[
+                      styles.friendAvatar,
+                      {
+                        backgroundColor: isSleeping
+                          ? 'rgba(108, 92, 231, 0.15)'
+                          : 'rgba(255, 165, 0, 0.15)',
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={isSleeping ? 'moon' : 'sunny'}
+                      size={22}
+                      color={isSleeping ? '#A89BF0' : '#FFB84D'}
+                    />
+                  </View>
+                  <View style={styles.friendInfo}>
+                    <Text style={styles.friendName}>{friend.name}</Text>
+                    <Text style={styles.friendUsername}>@{friend.username}</Text>
+                    <Text style={styles.lastUpdate}>
+                      {formatDistanceToNow(new Date(friend.last_update), { addSuffix: true })}
+                    </Text>
+                  </View>
+                  <View style={styles.friendStatus}>{renderStatusBadge(friend.status)}</View>
                 </View>
-                <View style={styles.friendInfo}>
-                  <Text style={styles.friendName}>{friend.name}</Text>
-                  <Text style={styles.friendUsername}>@{friend.username}</Text>
-                  <Text style={styles.lastUpdate}>
-                    {formatDistanceToNow(new Date(friend.last_update), { addSuffix: true })}
-                  </Text>
-                </View>
-                <View style={styles.friendStatus}>
-                  {renderStatusIcon(friend.status)}
-                  {renderStatusBadge(friend.status)}
-                </View>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
       </ScrollView>
@@ -242,93 +283,145 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F0F',
+    backgroundColor: '#0B0B14',
   },
   header: {
-    paddingTop: 60,
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   greeting: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 30,
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#999999',
+    fontSize: 15,
+    color: '#9999B0',
   },
   content: {
     flex: 1,
   },
   statusSection: {
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 24,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 16,
+    letterSpacing: -0.3,
   },
-  statusButtons: {
-    gap: 16,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  friendCount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6C5CE7',
+    backgroundColor: 'rgba(108, 92, 231, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   statusButton: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    marginBottom: 14,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+  },
+  sleepButton: {
+    borderColor: 'rgba(108, 92, 231, 0.2)',
+    backgroundColor: '#15152A',
+  },
+  activeSleepButton: {
+    borderColor: '#6C5CE7',
+  },
+  awakeButton: {
+    borderColor: 'rgba(255, 165, 0, 0.2)',
+    backgroundColor: '#1E1A14',
+  },
+  activeAwakeButton: {
+    borderColor: '#FFA500',
+  },
+  buttonGradient: {
+    paddingVertical: 22,
+    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#2A2A2A',
-    minHeight: 120,
+    minHeight: 140,
   },
-  activeStatusButton: {
-    borderColor: '#6C5CE7',
-    backgroundColor: 'rgba(108, 92, 231, 0.1)',
+  buttonIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   statusButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 12,
+    fontSize: 19,
+    fontWeight: '700',
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  statusButtonSubtext: {
+    color: '#8B8BA3',
+    fontSize: 13,
   },
   friendsSection: {
-    padding: 24,
-    paddingTop: 0,
+    paddingHorizontal: 20,
+    paddingTop: 24,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 48,
   },
+  emptyIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   emptyStateText: {
-    fontSize: 18,
-    color: '#666666',
-    marginTop: 16,
+    fontSize: 17,
+    color: '#9999B0',
     fontWeight: '600',
+    marginBottom: 6,
   },
   emptyStateSubtext: {
-    fontSize: 14,
-    color: '#444444',
-    marginTop: 8,
+    fontSize: 13,
+    color: '#555570',
+    textAlign: 'center',
   },
   friendCard: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#15152A',
+    borderRadius: 16,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: 'rgba(255, 255, 255, 0.04)',
   },
   friendAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#2A2A2A',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -338,18 +431,18 @@ const styles = StyleSheet.create({
   },
   friendName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 2,
   },
   friendUsername: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 13,
+    color: '#777799',
     marginBottom: 4,
   },
   lastUpdate: {
-    fontSize: 12,
-    color: '#444444',
+    fontSize: 11,
+    color: '#555570',
   },
   friendStatus: {
     alignItems: 'flex-end',
@@ -357,19 +450,19 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 5,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });

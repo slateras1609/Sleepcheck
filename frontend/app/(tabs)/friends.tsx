@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
@@ -24,6 +25,7 @@ interface SearchResult {
 
 export default function FriendsScreen() {
   const { user, sessionToken } = useAuth();
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [friendCode, setFriendCode] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -32,7 +34,6 @@ export default function FriendsScreen() {
 
   const searchUsers = async () => {
     if (!searchQuery.trim()) return;
-
     try {
       setSearching(true);
       const response = await fetch(`${BACKEND_URL}/api/friends/search`, {
@@ -43,7 +44,6 @@ export default function FriendsScreen() {
         },
         body: JSON.stringify({ username: searchQuery }),
       });
-
       if (response.ok) {
         const data = await response.json();
         setSearchResults(data);
@@ -67,14 +67,13 @@ export default function FriendsScreen() {
         },
         body: JSON.stringify({ friend_id: friendId }),
       });
-
       if (response.ok) {
-        Alert.alert('Success', 'Friend request sent!');
+        Alert.alert('Request Sent', 'Friend request sent successfully!');
         setSearchResults([]);
         setSearchQuery('');
       } else {
         const error = await response.json();
-        Alert.alert('Error', error.detail || 'Failed to send friend request');
+        Alert.alert('Unable to Send', error.detail || 'Failed to send friend request');
       }
     } catch (error) {
       console.error('Error sending friend request:', error);
@@ -86,10 +85,9 @@ export default function FriendsScreen() {
 
   const addByFriendCode = async () => {
     if (!friendCode.trim()) {
-      Alert.alert('Error', 'Please enter a friend code');
+      Alert.alert('Enter Code', 'Please enter a friend code');
       return;
     }
-
     try {
       const response = await fetch(`${BACKEND_URL}/api/friends/add-by-code`, {
         method: 'POST',
@@ -99,13 +97,12 @@ export default function FriendsScreen() {
         },
         body: JSON.stringify({ friend_code: friendCode.toUpperCase() }),
       });
-
       if (response.ok) {
-        Alert.alert('Success', 'Friend request sent!');
+        Alert.alert('Request Sent', 'Friend request sent successfully!');
         setFriendCode('');
       } else {
         const error = await response.json();
-        Alert.alert('Error', error.detail || 'Invalid friend code');
+        Alert.alert('Unable to Add', error.detail || 'Invalid friend code');
       }
     } catch (error) {
       console.error('Error adding by friend code:', error);
@@ -115,34 +112,49 @@ export default function FriendsScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0F0F0F', '#1A1A1A']} style={styles.header}>
+      <LinearGradient
+        colors={['#1A1A2E', '#0F0F1A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + 20 }]}
+      >
         <Text style={styles.title}>Add Friends</Text>
-        <Text style={styles.subtitle}>Search by username or use friend code</Text>
+        <Text style={styles.subtitle}>Search by username or use a friend code</Text>
       </LinearGradient>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Search by Username</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="search" size={18} color="#A89BF0" />
+            <Text style={styles.sectionTitle}>Search Username</Text>
+          </View>
           <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#666666" style={styles.searchIcon} />
+            <Ionicons name="at" size={18} color="#777799" style={styles.searchIcon} />
             <TextInput
+              testID="username-search-input"
               style={styles.searchInput}
-              placeholder="Enter username"
-              placeholderTextColor="#666666"
+              placeholder="username"
+              placeholderTextColor="#555570"
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={searchUsers}
               autoCapitalize="none"
             />
             <TouchableOpacity
+              testID="search-button"
               style={styles.searchButton}
               onPress={searchUsers}
               disabled={searching}
+              activeOpacity={0.8}
             >
               {searching ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.searchButtonText}>Search</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
               )}
             </TouchableOpacity>
           </View>
@@ -150,23 +162,29 @@ export default function FriendsScreen() {
           {searchResults.length > 0 && (
             <View style={styles.resultsContainer}>
               {searchResults.map((result) => (
-                <View key={result.user_id} style={styles.resultCard}>
+                <View
+                  key={result.user_id}
+                  testID={`search-result-${result.username}`}
+                  style={styles.resultCard}
+                >
                   <View style={styles.resultAvatar}>
-                    <Ionicons name="person" size={24} color="#666666" />
+                    <Ionicons name="person" size={22} color="#A89BF0" />
                   </View>
                   <View style={styles.resultInfo}>
                     <Text style={styles.resultName}>{result.name}</Text>
                     <Text style={styles.resultUsername}>@{result.username}</Text>
                   </View>
                   <TouchableOpacity
+                    testID={`send-request-${result.username}`}
                     style={styles.addButton}
                     onPress={() => sendFriendRequest(result.user_id)}
                     disabled={sendingRequest === result.user_id}
+                    activeOpacity={0.8}
                   >
                     {sendingRequest === result.user_id ? (
-                      <ActivityIndicator size="small" color="#6C5CE7" />
+                      <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
-                      <Ionicons name="person-add" size={24} color="#6C5CE7" />
+                      <Ionicons name="person-add" size={20} color="#FFFFFF" />
                     )}
                   </TouchableOpacity>
                 </View>
@@ -175,34 +193,48 @@ export default function FriendsScreen() {
           )}
         </View>
 
-        <View style={styles.divider} />
-
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Add by Friend Code</Text>
-          <View style={styles.codeContainer}>
-            <TextInput
-              style={styles.codeInput}
-              placeholder="Enter friend code"
-              placeholderTextColor="#666666"
-              value={friendCode}
-              onChangeText={setFriendCode}
-              autoCapitalize="characters"
-              maxLength={8}
-            />
-            <TouchableOpacity style={styles.addCodeButton} onPress={addByFriendCode}>
-              <Text style={styles.addCodeButtonText}>Add Friend</Text>
-            </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="key-outline" size={18} color="#A89BF0" />
+            <Text style={styles.sectionTitle}>Add by Friend Code</Text>
           </View>
+          <TextInput
+            testID="friend-code-input"
+            style={styles.codeInput}
+            placeholder="XXXXXXXX"
+            placeholderTextColor="#3A3A55"
+            value={friendCode}
+            onChangeText={setFriendCode}
+            autoCapitalize="characters"
+            maxLength={8}
+          />
+          <TouchableOpacity
+            testID="add-by-code-button"
+            style={styles.primaryButton}
+            onPress={addByFriendCode}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="person-add" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Text style={styles.primaryButtonText}>Send Friend Request</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.divider} />
-
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Friend Code</Text>
-          <View style={styles.myCodeContainer}>
-            <Text style={styles.myCode}>{user?.friend_code}</Text>
-            <Text style={styles.myCodeSubtext}>Share this code with friends</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="share-social-outline" size={18} color="#A89BF0" />
+            <Text style={styles.sectionTitle}>Your Friend Code</Text>
           </View>
+          <LinearGradient
+            colors={['rgba(108, 92, 231, 0.25)', 'rgba(108, 92, 231, 0.08)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.myCodeContainer}
+          >
+            <Text testID="my-friend-code" style={styles.myCode}>
+              {user?.friend_code}
+            </Text>
+            <Text style={styles.myCodeSubtext}>Share this code with friends to connect</Text>
+          </LinearGradient>
         </View>
       </ScrollView>
     </View>
@@ -212,44 +244,54 @@ export default function FriendsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F0F',
+    backgroundColor: '#0B0B14',
   },
   header: {
-    paddingTop: 60,
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 30,
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#999999',
+    fontSize: 15,
+    color: '#9999B0',
   },
   content: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 28,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 16,
+    letterSpacing: -0.2,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: '#15152A',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: 'rgba(255, 255, 255, 0.04)',
   },
   searchIcon: {
     marginRight: 8,
@@ -258,36 +300,34 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#FFFFFF',
     fontSize: 16,
+    paddingVertical: 10,
   },
   searchButton: {
     backgroundColor: '#6C5CE7',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginLeft: 8,
-  },
-  searchButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   resultsContainer: {
-    marginTop: 16,
+    marginTop: 12,
   },
   resultCard: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#15152A',
+    borderRadius: 14,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: 'rgba(255, 255, 255, 0.04)',
   },
   resultAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#2A2A2A',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(108, 92, 231, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -296,71 +336,73 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 2,
   },
   resultUsername: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 13,
+    color: '#777799',
   },
   addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(108, 92, 231, 0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#6C5CE7',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#2A2A2A',
-    marginVertical: 24,
-  },
-  codeContainer: {
-    gap: 12,
-  },
   codeInput: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#15152A',
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 22,
     textAlign: 'center',
-    fontWeight: '600',
-    letterSpacing: 2,
+    fontWeight: '700',
+    letterSpacing: 6,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: 'rgba(255, 255, 255, 0.04)',
+    marginBottom: 12,
   },
-  addCodeButton: {
+  primaryButton: {
     backgroundColor: '#6C5CE7',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 15,
+    borderRadius: 14,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    shadowColor: '#6C5CE7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  addCodeButtonText: {
+  primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   myCodeContainer: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 24,
+    borderRadius: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#6C5CE7',
   },
   myCode: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#6C5CE7',
-    letterSpacing: 4,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 6,
     marginBottom: 8,
   },
   myCodeSubtext: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 13,
+    color: '#A89BF0',
   },
 });
