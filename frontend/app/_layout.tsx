@@ -19,20 +19,7 @@ LogBox.ignoreLogs([
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Global handler for unhandled promise rejections to prevent yellow box errors
-if (typeof globalThis !== 'undefined') {
-  // @ts-ignore - process is available in react-native
-  const tracking = require('promise/setimmediate/rejection-tracking');
-  if (tracking && tracking.enable) {
-    tracking.enable({
-      allRejections: false,
-      onUnhandled: (id: number, error: any) => {
-        console.warn(`Unhandled promise rejection (id ${id}):`, error);
-      },
-      onHandled: () => {},
-    });
-  }
-}
+
 
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
