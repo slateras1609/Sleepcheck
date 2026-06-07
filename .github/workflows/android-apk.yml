@@ -25,16 +25,6 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('frontend/android/gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-
-
       - name: Install yarn dependencies
         working-directory: frontend
         run: yarn install --no-immutable
@@ -46,11 +36,14 @@ jobs:
         run: |
           echo "EXPO_PUBLIC_BACKEND_URL=${{ secrets.EXPO_PUBLIC_BACKEND_URL }}" > .env
 
-      - name: Generate native Android project (expo prebuild)
+      - name: Generate native Android project
         working-directory: frontend
         run: npx expo prebuild --platform android --no-install --clean
         env:
           EXPO_PUBLIC_BACKEND_URL: ${{ secrets.EXPO_PUBLIC_BACKEND_URL }}
+
+      - name: Clean Gradle cache
+        run: rm -rf ~/.gradle/caches
 
       - name: Make Gradlew executable
         working-directory: frontend/android
@@ -58,7 +51,7 @@ jobs:
 
       - name: Build debug APK
         working-directory: frontend/android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew clean assembleDebug --no-daemon --stacktrace
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8"
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
