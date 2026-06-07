@@ -28,7 +28,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-image.png",
+          "image": "./assets/images/ChatGPT Image 7 Ιουν 2026, 03_37_16 π.μ.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#000"
