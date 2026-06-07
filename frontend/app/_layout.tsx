@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
 import { AuthProvider } from '../contexts/AuthContext';
 import { SocketProvider } from '../contexts/SocketContext';
+import { useEffect } from 'react';
 import { LogBox } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -13,6 +15,10 @@ LogBox.ignoreLogs([
 ]);
 
 export default function RootLayout() {
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
