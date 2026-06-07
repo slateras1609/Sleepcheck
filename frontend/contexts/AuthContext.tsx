@@ -198,8 +198,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    checkExistingSession();
-  }, []);
+  const timeout = setTimeout(() => {
+    setLoading(false);
+  }, 3000);
+
+  checkExistingSession().finally(() => {
+    clearTimeout(timeout);
+    setLoading(false);
+  });
+}, []);
 
   const signIn = async () => {
     try {
