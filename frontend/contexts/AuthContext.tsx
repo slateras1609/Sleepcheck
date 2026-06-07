@@ -56,15 +56,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const processedSessionIds = useRef<Set<string>>(new Set());
 
   const processSessionId = async (sessionId: string): Promise<boolean> => {
-    // Avoid processing same session_id twice
     if (processedSessionIds.current.has(sessionId)) {
-      console.log('Session ID already processed:', sessionId);
       return !!user;
     }
+
     processedSessionIds.current.add(sessionId);
 
     try {
-      console.log('Processing session_id:', sessionId);
       const response = await fetch(`${BACKEND_URL}/api/auth/session`, {
         method: 'POST',
         headers: {
@@ -75,19 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
+
         await setStoredToken(data.session_token);
         setSessionToken(data.session_token);
         setUser(data.user);
 
-        // Clean URL on web
         if (Platform.OS === 'web') {
           window.history.replaceState(null, '', window.location.pathname);
         }
+
         return true;
-      } else {
-        console.error('Failed to exchange session_id:', await response.text());
-        return false;
       }
+
+      return false;
     } catch (error) {
       console.error('Error processing session_id:', error);
       return false;
@@ -97,81 +95,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkExistingSession = async () => {
     try {
       const token = await getStoredToken();
-      if (token) {
-        const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
 
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          setSessionToken(token);
-        } else {
-          await removeStoredToken();
-        }
+      if (!token) {
+        return;
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        setSessionToken(token);
+      } else {
+        await removeStoredToken();
       }
     } catch (error) {
       console.error('Error checking session:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Parse session_id from a URL string (handles both query params and hash)
   const extractSessionId = (urlStr: string): string | null => {
     try {
-      // Try parsing with Linking.parse first
       const parsed = Linking.parse(urlStr);
+
       if (parsed.queryParams?.session_id) {
         return parsed.queryParams.session_id as string;
       }
 
-      // Try hash fragment
       const hashMatch = urlStr.match(/[#&]session_id=([^&]+)/);
       if (hashMatch) {
         return decodeURIComponent(hashMatch[1]);
       }
 
-      // Try query string
       const queryMatch = urlStr.match(/[?&]session_id=([^&]+)/);
       if (queryMatch) {
         return decodeURIComponent(queryMatch[1]);
       }
-    } catch (e) {
-      console.error('Error extracting session_id:', e);
+    } catch (error) {
+      console.error('Error extracting session_id:', error);
     }
+
     return null;
   };
 
-  // Handle deep links on mobile
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
-    // Handle cold start (app opened via deep link)
     Linking.getInitialURL()
       .then((url) => {
         if (url) {
-          console.log('Initial URL:', url);
           const sessionId = extractSessionId(url);
           if (sessionId) {
-            processSessionId(sessionId).catch((err) =>
-              console.error('Error processing initial URL session:', err)
-            );
+            processSessionId(sessionId);
           }
         }
       })
-      .catch((err) => console.error('Error getting initial URL:', err));
+      .catch((error) => console.error('Error getting initial URL:', error));
 
-    // Handle hot links (app already open)
     const subscription = Linking.addEventListener('url', (event) => {
-      console.log('Deep link received:', event.url);
       const sessionId = extractSessionId(event.url);
       if (sessionId) {
-        processSessionId(sessionId).catch((err) =>
-          console.error('Error processing deep link session:', err)
-        );
+        processSessionId(sessionId);
       }
     });
 
@@ -180,17 +168,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Handle web redirects
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    const hash = window.location.hash;
-    const search = window.location.search;
-
-    const sessionId =
-      extractSessionId(window.location.href) ||
-      new URLSearchParams(hash.replace('#', '')).get('session_id') ||
-      new URLSearchParams(search).get('session_id');
+    const sessionId = extractSessionId(window.location.href);
 
     if (sessionId) {
       processSessionId(sessionId);
@@ -198,15 +179,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-  const timeout = setTimeout(() => {
-    setLoading(false);
-  }, 3000);
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
 
-  checkExistingSession().finally(() => {
-    clearTimeout(timeout);
-    setLoading(false);
-  });
-}, []);
+    checkExistingSession()
+      .catch((error) => {
+        console.error('checkExistingSession failed:', error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   const signIn = async () => {
     try {
@@ -215,12 +201,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (Platform.OS === 'web') {
         redirectUrl = window.location.origin + '/';
       } else {
-        // Use root URL to ensure it always matches the index route
-        // Format: exp://host/--/ on Expo Go, scheme://  on builds
         redirectUrl = Linking.createURL('/');
       }
-
-      console.log('Redirect URL:', redirectUrl);
 
       const authUrl = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
 
@@ -228,7 +210,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.location.href = authUrl;
       } else {
         const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
-        console.log('Auth result:', result);
 
         if (result.type === 'success' && result.url) {
           const sessionId = extractSessionId(result.url);
@@ -265,7 +246,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signIn, signOut, sessionToken, processSessionId }}
+      value={{
+        user,
+        loading,
+        signIn,
+        signOut,
+        sessionToken,
+        processSessionId,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -274,8 +262,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
+
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
+
   return context;
 }
