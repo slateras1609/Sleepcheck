@@ -19,8 +19,7 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "jsEngine": "jsc"
-    },
+       },
 
     "web": {
       "bundler": "metro",
