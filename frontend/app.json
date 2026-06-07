@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "SleepCheck",
-    "slug": "SleepCheck",
+    "slug": "sleepcheck",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "SleepCheck",
+    "scheme": "sleepcheck",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
 
@@ -14,12 +14,13 @@
     },
 
     "android": {
+      "package": "com.emergent.sleepcheck",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "edgeToEdgeEnabled": true,
-       },
+      "edgeToEdgeEnabled": true
+    },
 
     "web": {
       "bundler": "metro",
